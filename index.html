@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>calculator-ts</title>
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <div class="calculator">
+      <div class="display">
+        <div id="history" class="history"></div>
+        <div id="display-value" class="display-value">0</div>
+      </div>
+  
+      <div class="buttons">
+        <button data-key="7" class="btn">7</button>
+        <button data-key="8" class="btn">8</button>
+        <button data-key="9" class="btn">9</button>
+        <button data-key="/" class="btn operator">÷</button>
+        
+        <button data-key="4" class="btn">4</button>
+        <button data-key="5" class="btn">5</button>
+        <button data-key="6" class="btn">6</button>
+        <button data-key="*" class="btn operator">×</button>
+        
+        <button data-key="1" class="btn">1</button>
+        <button data-key="2" class="btn">2</button>
+        <button data-key="3" class="btn">3</button>
+        <button data-key="-" class="btn operator">-</button>
+        
+        <button data-key="0" class="btn">0</button>
+        <button data-key="." class="btn">.</button>
+        <button data-key="AC" class="btn">AC</button>
+        <button data-key="+" class="btn operator">+</button>
+
+        <button data-key="=" class="btn equal btn--wide">=</button>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

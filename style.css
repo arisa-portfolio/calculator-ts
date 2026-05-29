@@ -1,0 +1,110 @@
+@charset "UTF-8";
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: #f0f0f0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* 電卓の大枠 */
+.calculator {
+    width: 270px;
+    margin: 230px auto;
+    padding: 10px;
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+/* 画面の大枠 */
+.display {
+    position: relative;
+    background: #222222;
+    border-radius: 5px;
+}
+
+/* 履歴（左上） */
+.history {
+    position: absolute;
+    top: 5px;
+    left: 10px;
+    font-size: 0.8rem;
+    color: #aaaaaa;
+}
+
+/* 数字（右下） */
+.display-value {
+    width: 100%;
+    height: 70px;
+    text-align: right;
+    font-size: 2rem;
+    color: #ffffff;
+    padding: 10px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+/* ボタンの大枠 */
+.buttons {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 5px;
+}
+
+/* 数字ボタン */
+.btn {
+    width: 100%;
+    height: 50px;
+    font-size: 1.5rem;
+    border: none;
+    border-radius: 5px;
+    background: #e0e0e0;
+    cursor: pointer;
+
+    /* transition: all 0.1s ease; */
+
+    /* 立体感 */
+    box-shadow: 0 4px #b0b0b0;
+}
+
+/* ボタンを押したとき */
+.btn:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px #b0b0b0;
+}
+
+/* 演算子 */
+.operator {
+    background: #f39c12;
+    color: #ffffff;
+    box-shadow: 0 4px #c87f0a;
+}
+
+/* = */
+.equal {
+    background: #2ecc71;
+    color: #ffffff;
+    box-shadow: 0 4px #27ae60;
+}
+
+/* 横に広いボタン */
+.btn--wide {
+    grid-column: span 4;
+}
+
+/* クリック時の青枠削除 */
+button {
+    user-select: none;
+}
+
+button:focus {
+    outline: none;
+}
