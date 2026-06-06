@@ -30,7 +30,7 @@ const keyMap = new Map<string, KeyToken>([
     ["*", { kind: "operation", value: Operation.Multiply }],
     ["/", { kind: "operation", value: Operation.Divide }],
     ["=", { kind: "equal" }],
-    ["AC", { kind: "allClear" }],
+    ["C", { kind: "allClear" }],
     [".", { kind: "decimal" }],
     ["⌫", { kind: "backspace" }]
 ]);
