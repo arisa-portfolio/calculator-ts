@@ -44,7 +44,7 @@ export class KeyMapper {
             };
         }
     
-        // 該当なし（例："abc", "@"）→ どんなエラーがありえるか考える！
+        // 該当なし（例："abc", "@"）
         return null;
     }
 
@@ -58,10 +58,6 @@ export class KeyMapper {
     public resolve(target: EventTarget | null): KeyToken | null {
         if (!(target instanceof HTMLElement)) {
            return null;
-        }
-
-        if (!(target instanceof HTMLElement)) {
-            return null;
         }
         
         // data-key 属性を取得（未設定・空文字は無効として扱う）
