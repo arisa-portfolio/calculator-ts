@@ -272,10 +272,12 @@ export class Calculator {
      */
     private handleEqual(): void {
         // 入力している数値や演算子がない場合、何もしない
-        if (
-            this.leftSideNumber === null ||
-            this.currentOperator === null
-        ) {
+        if (this.leftSideNumber === null || this.currentOperator === null) {
+            return;
+        }
+        
+        // 右辺が空、または "-" のみの場合も計算しない
+        if (this.buffer.isEmpty() || this.buffer.isOnlyMinus()) {
             return;
         }
 
@@ -360,7 +362,7 @@ export class Calculator {
      */
     private handleError(error: unknown): void {
         if (error instanceof DivisionByZeroError) {
-            console.debug("0除算エラー");
+            console.error(error.message);
 
             this.state = CalcState.Error;
             this.display.renderError(Config.ERROR_MESSAGE);
