@@ -36,29 +36,34 @@ export class NumberFormatter {
     }
 
     /**
-     * 数値を指数表記に変換する
-     * 桁数制限内に収まるよう調整する
+     * 数値を指数表記へ変換する
+     * 
+     * 表示全体の文字数が
+     * Config.MAX_DIGITS 以内になるよう調整する
      * 
      * @param value 変換対象の数値
      * @returns 指数表記文字列
      */
     private static formatExponential(value: number): string {
+
         console.debug("指数表記変換開始", { value });
 
-        for (let i = 6; i >= 0; i--) {
-            let text = value.toExponential(i);
-            
-            console.debug("試行", { i, text });
+        for (let fraction = 10; fraction >= 0; fraction--) {
 
-            // e+ の + を削る
-            text = text.replace("e+", "e");
+            const text = value.toExponential(fraction);
+            
+            console.debug("指数表示候補", {
+                fraction,
+                text,
+                length: text.length
+            });
 
             if (this.isFits(text)) {
                 return text;
             }
         }
 
-        return value.toExponential(0).replace("e+", "e");
+        return value.toExponential(0);
     }
 
     /**
@@ -87,17 +92,23 @@ export class NumberFormatter {
     }
 
     /**
-     * 表示桁数に収まるか
-     * ".", "-", "e", "+" は桁数カウントから除外
+     * 表示文字列が最大表示桁数以内か判定する
+     * 
+     * 指数表記の場合も e や符号を含めた
+     * 表示全体の文字数で判定する
+     * 
+     * @param text 表示対象文字列
+     * @returns 表示可能な場合 true
      */
     private static isFits(text: string): boolean {
-        return this.digitCount(text) <= Config.MAX_DIGITS;
-    }
+        const length = text.length;
 
-    /**
-     * 数字の桁数を数える
-     */
-    private static digitCount(text: string): number {
-        return text.replace(/[.\-e+]/g, "").length;
+        console.debug("表示桁数チェック", {
+            text,
+            length,
+            max: Config.MAX_DIGITS
+        });
+
+        return length <= Config.MAX_DIGITS;
     }
 }

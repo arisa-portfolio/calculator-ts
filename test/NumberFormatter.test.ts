@@ -40,19 +40,17 @@ describe("NumberFormatter", () => {
 
     describe("指数表記", () => {
         it("大きい数は指数表記になる", () => {            
-            expect(NumberFormatter.format(123456789)).toMatch(/e/);
+            expect(NumberFormatter.format(123456789)).toBe("1.2346e+8");
         });
 
         it("小さい数は指数表記になる", () => {
-            expect(NumberFormatter.format(0.000000123)).toMatch(/e-/);
+            expect(NumberFormatter.format(0.000000123)).toBe("1.23e-7");
         });
 
-        it("指数表記は桁数制限以内に収まる", () => {
+        it("指数表記でも表示全体が8文字以内", () => {
             const result = NumberFormatter.format(123456789);
 
-            const digits = result.replace(/[.\-e+]/g, "").length;
-
-            expect(digits).toBeLessThanOrEqual(8);
+            expect(result.length).toBeLessThanOrEqual(8);
         });
 
         it("指数表記の + は省略される", () => {
