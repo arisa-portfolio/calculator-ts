@@ -387,59 +387,64 @@ export class Calculator {
             return;
         }
 
-        const inputText = this.buffer.getValue() ?? "";
+        const inputText = this.buffer.getValue();
 
         const special = this.formatSpecial(inputText);
+
         if (special !== null) {
             this.display.render(special);
             return;
         }
 
-        const formatted = NumberFormatter.format(this.buffer.toNumber());
-        this.display.render(formatted);
+        this.display.render(NumberFormatter.format(this.buffer.toNumber()));
     }
 
     /**
-     * 特殊な入力状態を表示用に変換する
+     * 入力途中の特殊な状態を表示用文字列へ変換する
      * 
-     * 通常の数値フォーマットでは扱えない以下を補正する：
+     * 数値変換すると情報が失われる入力状態を補正する。
+     * 
+     * 対象：
      * - 空文字 → "0"
      * - "-" → "-"
      * - "." → "0."
      * - "-." → "-0."
-     * - "-0" → "0"
-     * - 末尾 "." → 入力中としてそのまま表示
+     * - "0.0" → "0.0"
+     * - 末尾 "." の入力→ そのまま表示
      * 
-     * @param inputText 入力中の文字列（未フォーマット）
-     * @returns 特殊変換した文字列、該当しない場合は null
+     * @param inputText 入力バッファが保持している未変換の文字列
+     * @returns 表示用文字列。対象外の場合は null
      */
     private formatSpecial(inputText: string): string | null {
-        // 空は 0
+        // 未入力の場合は初期表示
         if (inputText === "") {
             return "0";
         }
 
-        // "-" はそのまま
+        // マイナス入力途中
         if (inputText === "-") {
             return "-";
         }
 
-        // "." は "0." にする
+        // 小数点入力途中
         if (inputText === ".") {
             return "0.";
         }
 
-        // "-." は "-0." にする
+        // 負の小数入力途中
         if (inputText === "-.") {
             return "-0.";
         }
 
-        // "-0" は "0" にする
-        if (inputText === "-0") {
-            return "0";
+        // 小数入力中の末尾 0を保持する
+        if (
+            inputText.includes(".") &&
+            inputText.endsWith("0")
+        ) {
+            return inputText;
         }
 
-        // "0." をそのまま表示
+        // 小数点入力後の状態を維持する
         if (inputText.endsWith(".")) {
             return inputText;
         }
