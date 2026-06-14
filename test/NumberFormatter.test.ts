@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { NumberFormatter } from "../src/domain/NumberFormatter";
+import { Config } from "../src/utility/Config";
 
 describe("NumberFormatter", () => {
     describe("基本動作", () => {
@@ -25,10 +26,6 @@ describe("NumberFormatter", () => {
             expect(NumberFormatter.format(12345678)).toBe("12345678");
         });
 
-        it("9桁以上は指数表記になる", () => {
-            expect(NumberFormatter.format(123456789)).toMatch(/e/);
-        });
-
         it("マイナス記号は桁数に含めない", () => {
             expect(NumberFormatter.format(-12345678)).toBe("-12345678");
         });
@@ -40,23 +37,22 @@ describe("NumberFormatter", () => {
 
     describe("指数表記", () => {
         it("大きい数は指数表記になる", () => {            
-            expect(NumberFormatter.format(123456789)).toBe("1.2346e+8");
+            expect(NumberFormatter.format(123456789)).toBe("1.2345679e+8");
         });
 
         it("小さい数は指数表記になる", () => {
-            expect(NumberFormatter.format(0.000000123)).toBe("1.23e-7");
+            expect(NumberFormatter.format(0.00000012345679)).toBe("1.2345679e-7");
         });
 
-        it("指数表記でも表示全体が8文字以内", () => {
-            const result = NumberFormatter.format(123456789);
-
-            expect(result.length).toBeLessThanOrEqual(8);
-        });
-
-        it("指数表記の + は省略される", () => {
-            const result = NumberFormatter.format(123456789);
-
-            expect(result).not.toMatch(/e\+/);
+        it("指数表記は有効数字8桁以内", () => {
+            const result = NumberFormatter.format(0.001234567);
+            
+            const mantissa =
+                result.split("e")[0]
+                    .replace(".", "")
+                    .replace("-", "");
+            
+            expect(mantissa.length).toBeLessThanOrEqual(Config.MAX_SIGNIFICANT_DIGITS);
         });
     });
 
@@ -66,7 +62,7 @@ describe("NumberFormatter", () => {
         });
 
         it("8桁を超えた瞬間に指数表記", () => {
-            expect(NumberFormatter.format(100000000)).toMatch(/e/);
+            expect(NumberFormatter.format(100000000)).toBe("1e+8");
         });
 
         it("小数でも8桁以内なら通常表示", () => {
@@ -74,7 +70,11 @@ describe("NumberFormatter", () => {
         });
 
         it("小数で桁数オーバーすると指数表記", () => {
-            expect(NumberFormatter.format(0.123456789)).toMatch(/e/);
+            expect(NumberFormatter.format(0.123456789)).toBe("1.2345679e-1");
+        });
+
+        it("指数表記になる最小値を確認する", () => {
+            expect(NumberFormatter.format(0.00000001)).toBe("1e-8")
         });
     });
 
@@ -85,10 +85,6 @@ describe("NumberFormatter", () => {
 
         it("負の小数も正しく処理される", () => {
             expect(NumberFormatter.format(-1.23)).toBe("-1.23");
-        });
-
-        it("非常に小さい数も処理できる", () => {
-            expect(NumberFormatter.format(1e-10)).toMatch(/e-/);
         });
     });
 });
