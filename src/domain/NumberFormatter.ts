@@ -8,8 +8,8 @@ export class NumberFormatter {
      * 数値を表示用文字列に変換する
      * 
      * 表示ルール：
-     * - 桁数内なら通常表示
-     * - 超えたら指数表記
+     * - 有効数字が 8桁以内なら通常表示
+     * - 超える場合は指数表記
      * 
      * @param value 表示対象の数値
      * @returns 表示用文字列
@@ -21,13 +21,10 @@ export class NumberFormatter {
         }
 
         // 通常文字列
-        const normal = value.toString();
+        const normal = this.normalize(value.toString());
 
-        // 正規化
-        const normalized = this.normalize(normal);
-
-        if (this.isFits(normalized)) {
-            return normalized;
+        if (this.countDigits(normal) <= Config.MAX_SIGNIFICANT_DIGITS) {
+            return normal;
         }
 
         console.debug("指数表記へ切替");
@@ -38,32 +35,28 @@ export class NumberFormatter {
     /**
      * 数値を指数表記へ変換する
      * 
-     * 表示全体の文字数が
-     * Config.MAX_DIGITS 以内になるよう調整する
+     * 有効数字 8桁以内になるよう変換する
      * 
      * @param value 変換対象の数値
      * @returns 指数表記文字列
      */
     private static formatExponential(value: number): string {
+        const fractionDigits = Config.MAX_SIGNIFICANT_DIGITS - 1;
 
-        console.debug("指数表記変換開始", { value });
+        const text = value.toExponential(fractionDigits);
 
-        for (let fraction = 10; fraction >= 0; fraction--) {
+        /** e の直前にある不要な 0を削除 */
+        const normalized = text
+            .replace(/\.?0+(?=e)/, "")
+            .replace(".e", "e");
+        
+        console.debug("指数表記変換", {
+            value,
+            text,
+            normalized
+        });
 
-            const text = value.toExponential(fraction);
-            
-            console.debug("指数表示候補", {
-                fraction,
-                text,
-                length: text.length
-            });
-
-            if (this.isFits(text)) {
-                return text;
-            }
-        }
-
-        return value.toExponential(0);
+        return normalized;
     }
 
     /**
@@ -92,23 +85,22 @@ export class NumberFormatter {
     }
 
     /**
-     * 表示文字列が最大表示桁数以内か判定する
+     * 数字部分の桁数を取得する
      * 
-     * 指数表記の場合も e や符号を含めた
-     * 表示全体の文字数で判定する
+     * ".", "-", "e", "+" は除外する
      * 
-     * @param text 表示対象文字列
-     * @returns 表示可能な場合 true
+     * @param text 表示文字列
+     * @returns 数字の桁数
      */
-    private static isFits(text: string): boolean {
-        const length = text.length;
+    private static countDigits(text: string): number {
 
-        console.debug("表示桁数チェック", {
+        const count = text.replace(/[.\-e+]/g, "").length;
+
+        console.debug("数字桁数確認", {
             text,
-            length,
-            max: Config.MAX_DIGITS
+            count
         });
 
-        return length <= Config.MAX_DIGITS;
+        return count;
     }
 }
