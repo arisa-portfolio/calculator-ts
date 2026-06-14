@@ -2,22 +2,22 @@
  * 電卓アプリの設定値
  */
 type ConfigType = {
-    /** 入力できる数値の最大桁数：8桁 */
+    /** 最大表示桁数 */
     readonly MAX_DIGITS: number;
 
-    /** 初期値：0 */
-    readonly DEFAULT_VALUE: string;
+    /** 最大有効数字桁数 */
+    readonly MAX_SIGNIFICANT_DIGITS: number;
 
     /** エラー発生時に表示するメッセージ */
     readonly ERROR_MESSAGE: string;
 };
 
 export const Config = {
-    /** 入力できる数値の最大桁数：8桁 */
+    /** 最大表示桁数 */
     MAX_DIGITS: 8,
 
-    /** 初期値：0 */
-    DEFAULT_VALUE: "0",
+    /** 最大有効数字桁数 */
+    MAX_SIGNIFICANT_DIGITS: 8,
 
     /** エラー発生時に表示するメッセージ */
     ERROR_MESSAGE: "エラー",
