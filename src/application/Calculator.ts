@@ -156,7 +156,10 @@ export class Calculator {
     /**
      * マイナス記号を「符号」として扱うか判定する
      * 
+     * 仕様：
      * - 先頭の "-" → 負数入力
+     * - 演算子直後の "-" → 右辺の負数
+     * - すでに "-" が入力済みの場合は無視する
      * 
      * @param operation 入力された演算子
      * @returns 符号として処理した場合 true
@@ -167,7 +170,13 @@ export class Calculator {
             return false;
         }
 
-        // 先頭の "-" のみ許可
+        // すでに "-" の場合は何もしない
+        if (this.buffer.isOnlyMinus()) {
+            console.debug("マイナス重複入力を無視");
+            return true;
+        }
+
+        // ① 先頭の "-"
         if (
             this.leftSideNumber === null &&
             this.buffer.isEmpty()
@@ -176,6 +185,18 @@ export class Calculator {
 
             this.buffer.pushMinus();
             this.state = CalcState.InputtingFirst;
+            return true;
+        }
+
+        // ② 演算子直後の "-"
+        if (
+            this.state === CalcState.OperatorEntered &&
+            this.buffer.isEmpty()
+        ) {
+            console.debug("符号入力（右辺）");
+
+            this.buffer.pushMinus();
+            this.state = CalcState.InputtingSecond;
             return true;
         }
 
