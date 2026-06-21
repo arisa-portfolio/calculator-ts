@@ -21,13 +21,23 @@ export class NumberFormatter {
         }
 
         // 通常文字列
-        const normal = this.normalize(value.toString());
+        const normal = this.normalize(
+            value.toPrecision(15)
+        );
+
+        console.debug("通常表示確認", {
+            value,
+            normal
+        });
 
         if (this.countDigits(normal) <= Config.MAX_SIGNIFICANT_DIGITS) {
             return normal;
         }
 
-        console.debug("指数表記へ切替");
+        console.debug("指数表記へ切替", {
+            value,
+            normal
+        });
 
         return this.formatExponential(value);
     }
@@ -93,7 +103,6 @@ export class NumberFormatter {
      * @returns 数字の桁数
      */
     private static countDigits(text: string): number {
-
         const count = text.replace(/[.\-e+]/g, "").length;
 
         console.debug("数字桁数確認", {
