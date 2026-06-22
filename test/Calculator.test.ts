@@ -50,7 +50,9 @@ describe("Calculator", () => {
     
             expect(display.text).toBe("123");
         });
+    });
 
+    describe("小数入力", () => {
         it("小数入力できる", () => {
             calculator.handle({ kind: "digit", value: 1 });
             calculator.handle({ kind: "decimal" });
@@ -58,7 +60,7 @@ describe("Calculator", () => {
     
             expect(display.text).toBe("1.5");
         });
-
+    
         it("小数点を連続入力しても1つだけになる", () => {
             calculator.handle({ kind: "digit", value: 1 });
             calculator.handle({ kind: "decimal" });
@@ -67,12 +69,40 @@ describe("Calculator", () => {
     
             expect(display.text).toBe("1.5");
         });
+    
+        it("0 から小数入力できる", () => {
+            calculator.handle({ kind: "decimal" });
+            calculator.handle({ kind: "digit", value: 5 });
+    
+            expect(display.text).toBe("0.5");
+        });
+    });
 
+    describe("負数入力", () => {
         it("先頭で - を押すとマイナス入力になる", () => {
             calculator.handle({ kind: "operation", value: Operation.Subtract });
             calculator.handle({ kind: "digit", value: 1 });
-
+    
             expect(display.text).toBe("-1");
+        });
+    });
+
+    describe("イコール入力", () => {
+        it("数字入力だけで =を押しても計算しない", () => {
+            calculator.handle({ kind: "digit", value: 5 });
+            calculator.handle({ kind: "equal" });
+
+            expect(display.text).toBe("5");
+            expect(display.history).toBe("");
+        });
+
+        it("演算子直後に =を押しても計算しない", () => {
+            calculator.handle({ kind: "digit", value: 5 });
+            calculator.handle({ kind: "operation", value: Operation.Add });
+            calculator.handle({ kind: "equal" });
+
+            expect(display.text).toBe("5");
+            expect(display.history.trim()).toBe("5 +");
         });
     });
 
@@ -112,8 +142,35 @@ describe("Calculator", () => {
     
             expect(display.text).toBe("2");
         });
-    
-        it("連続計算できる", () => {
+    });
+
+    describe("演算子上書き", () => {
+        it("演算子入力中に + → - → × と押すと、最後の演算子で上書きされる", () => {
+            calculator.handle({ kind: "digit", value: 1 });
+            calculator.handle({ kind: "operation", value: Operation.Add });
+            calculator.handle({ kind: "operation", value: Operation.Subtract });
+            calculator.handle({ kind: "operation", value: Operation.Multiply });
+            calculator.handle({ kind: "digit", value: 2 });
+            calculator.handle({ kind: "equal" });
+
+            expect(display.text).toBe("2");
+            expect(display.history.trim()).toBe("1 × 2 =");
+        });
+
+        it("演算子入力後の - は符号ではなく上書きされる", () => {
+            calculator.handle({ kind: "digit", value: 1 });
+            calculator.handle({ kind: "operation", value: Operation.Multiply });
+            calculator.handle({ kind: "operation", value: Operation.Subtract });
+            calculator.handle({ kind: "digit", value: 2 });
+            calculator.handle({ kind: "equal" });
+
+            expect(display.text).toBe("-1");
+            expect(display.history.trim()).toBe("1 - 2 =");
+        });
+    });
+
+    describe("連続計算", () => {
+        it("左から順に連続計算できる", () => {
             calculator.handle({ kind: "digit", value: 3 });
             calculator.handle({ kind: "operation", value: Operation.Add });
             calculator.handle({ kind: "digit", value: 2 });
@@ -122,21 +179,6 @@ describe("Calculator", () => {
             calculator.handle({ kind: "equal" });
     
             expect(display.text).toBe("20");
-        });
-    });
-
-    describe("演算子入力", () => {
-        it("演算子入力中に + → - → × と押すと、最後の演算子で上書きされる", () => {
-            calculator.handle({ kind: "digit", value: 1 });
-
-            calculator.handle({ kind: "operation", value: Operation.Add });
-            calculator.handle({ kind: "operation", value: Operation.Subtract });
-            calculator.handle({ kind: "operation", value: Operation.Multiply });
-            
-            calculator.handle({ kind: "digit", value: 2 });
-            calculator.handle({ kind: "equal" });
-
-            expect(display.text).toBe("2");
         });
     });
 
@@ -167,6 +209,56 @@ describe("Calculator", () => {
             calculator.handle({ kind: "equal" });
 
             expect(display.history.trim()).toBe("1 + 2 =");
+        });
+    });
+
+    describe("バックスペース", () => {
+        it("入力中の数字を 1文字削除できる", () => {
+            calculator.handle({ kind: "digit", value: 1 });
+            calculator.handle({ kind: "digit", value: 2 });
+            calculator.handle({ kind: "backspace" });
+
+            expect(display.text).toBe("1");
+        });
+
+        it("3+ 入力後の ⌫ で演算子を取り消す", () => {
+            calculator.handle({ kind: "digit", value: 3 });
+            calculator.handle({ kind: "operation", value: Operation.Add });
+            calculator.handle({ kind: "backspace" });
+
+            expect(display.text).toBe("3");
+            expect(display.history).toBe("");
+        });
+
+        it("3+2 入力後の ⌫ で右辺だけ削除する", () => {
+            calculator.handle({ kind: "digit", value: 3 });
+            calculator.handle({ kind:"operation", value: Operation.Add });
+            calculator.handle({ kind: "digit", value: 2 });
+            calculator.handle({ kind: "backspace" });
+
+            expect(display.text).toBe("3");
+            expect(display.history.trim()).toBe("3 +");
+        });
+
+        it("3+2⌫ 後に再入力すると履歴が更新される", () => {
+            calculator.handle({ kind: "digit", value: 3 });
+            calculator.handle({ kind: "operation", value: Operation.Add });
+            calculator.handle({ kind: "digit", value: 2 });
+            calculator.handle({ kind: "backspace" });
+            calculator.handle({ kind: "digit", value: 5 });
+
+            expect(display.history.trim()).toBe("3 + 5");
+        });
+
+        it("結果表示後の ⌫ で初期状態に戻る", () => {
+            calculator.handle({ kind: "digit", value: 3 });
+            calculator.handle({ kind: "operation", value: Operation.Add });
+            calculator.handle({ kind: "digit", value: 2 });
+            calculator.handle({ kind: "equal" });
+            calculator.handle({ kind: "backspace" });
+
+            expect(display.text).toBe("0");
+            expect(display.history).toBe("");
         });
     });
 
