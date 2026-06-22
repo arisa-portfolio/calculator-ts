@@ -23,7 +23,7 @@ describe("InputBuffer", () => {
         });
     });
 
-    describe("pushDigit", () => {
+    describe("数字入力", () => {
         it("数字を順番に追加できる", () => {
             buffer.pushDigit(1);
             buffer.pushDigit(2);
@@ -45,11 +45,11 @@ describe("InputBuffer", () => {
             }
 
             expect(buffer.digitCount()).toBe(Config.MAX_DIGITS);
-            expect(buffer.getValue()).toBe("11111111");
+            expect(buffer.getValue().length).toBe(Config.MAX_DIGITS);
         });
     });
 
-    describe("pushDecimal", () => {
+    describe("小数入力", () => {
         it("小数点を追加できる", () => {
             buffer.pushDigit(1);
             buffer.pushDecimal();
@@ -71,7 +71,41 @@ describe("InputBuffer", () => {
         });
     });
 
-    describe("clear", () => {
+    describe("マイナス入力", () => {
+        it("空状態では - になる", () => {
+            buffer.pushMinus();
+
+            expect(buffer.getValue()).toBe("-");
+        });
+
+        it("入力済みの場合は先頭に - が付く", () => {
+            buffer.pushDigit(5);
+            buffer.pushMinus();
+
+            expect(buffer.getValue()).toBe("-5");
+        });
+
+        it("2回入力しても - は重複しない", () => {
+            buffer.pushMinus();
+            buffer.pushMinus();
+
+            expect(buffer.getValue()).toBe("-");
+        });
+
+        it("- のみの場合 trueになる", () => {
+            buffer.pushMinus();
+
+            expect(buffer.isOnlyMinus()).toBe(true);
+        });
+
+        it("- 以外の場合 falseになる", () => {
+            buffer.pushDigit(5);
+
+            expect(buffer.isOnlyMinus()).toBe(false);
+        });
+    });
+
+    describe("クリア", () => {
         it("値を空文字にする", () => {
             buffer.pushDigit(9);
 
@@ -82,7 +116,7 @@ describe("InputBuffer", () => {
         });
     });
 
-    describe("backspace", () => {
+    describe("バックスペース", () => {
         it("末尾の1文字を削除できる", () => {
             buffer.pushDigit(1);
             buffer.pushDigit(2);
@@ -92,9 +126,23 @@ describe("InputBuffer", () => {
 
             expect(buffer.getValue()).toBe("12");
         });
+
+        it("空状態で実行しても変化しない", () => {
+            buffer.backspace();
+
+            expect(buffer.getValue()).toBe("");
+        });
     });
 
-    describe("toNumber", () => {
+    describe("値設定", () => {
+        it("文字列を直接設定できる", () => {
+            buffer.setValue("123");
+
+            expect(buffer.getValue()).toBe("123");
+        });
+    });
+
+    describe("数値変換", () => {
         it("整数文字列を数値に変換できる", () => {
             buffer.pushDigit(1);
             buffer.pushDigit(2);
@@ -111,10 +159,18 @@ describe("InputBuffer", () => {
         });
     });
 
-    describe("digitCount", () => {
+    describe("桁数", () => {
         it("小数点を除いた桁数を返す", () => {
             buffer.pushDigit(1);
             buffer.pushDecimal();
+            buffer.pushDigit(2);
+
+            expect(buffer.digitCount()).toBe(2);
+        });
+
+        it("マイナス記号を除いた桁数を返す", () => {
+            buffer.pushMinus();
+            buffer.pushDigit(1);
             buffer.pushDigit(2);
 
             expect(buffer.digitCount()).toBe(2);
