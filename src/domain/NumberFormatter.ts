@@ -13,7 +13,7 @@ export class NumberFormatter {
      * 
      * @param value 表示対象の数値
      * @returns 表示用文字列
-    */
+     */
     public static format(value: number): string {
         // -0 対策
         if (Object.is(value, -0)) {
@@ -21,31 +21,45 @@ export class NumberFormatter {
         }
 
         // 通常文字列
-        const normal = this.normalize(
-            value.toPrecision(15)
-        );
+        const normal = this.toPlainString(value);
 
         console.debug("通常表示確認", {
             value,
-            normal
+            normal,
+            digits: this.countDigits(normal),
         });
 
         if (this.countDigits(normal) <= Config.MAX_SIGNIFICANT_DIGITS) {
             return normal;
         }
 
-        console.debug("指数表記へ切替", {
-            value,
-            normal
-        });
+        console.debug("指数表記へ切替");
 
         return this.formatExponential(value);
     }
 
     /**
+     * 数値を表示用の通常表記文字列へ変換する
+     * 
+     * - 指数表記を使用しない
+     * - 浮動小数点による不要な誤差表示を抑えるため 15桁で固定する
+     * - 末尾の不要な 0を削除する
+     * - 不要な小数点を削除する
+     * 
+     * @param value 変換対象の数値
+     * @returns 通常表記の文字列
+     */
+    private static toPlainString(value: number): string {
+        return value
+            .toFixed(15)
+            .replace(/0+$/, "")
+            .replace(/\.$/, "");
+    }
+
+    /**
      * 数値を指数表記へ変換する
      * 
-     * 有効数字 8桁以内になるよう変換する
+     * Config で設定した最大有効数字以内になるよう変換する
      * 
      * @param value 変換対象の数値
      * @returns 指数表記文字列
@@ -70,31 +84,6 @@ export class NumberFormatter {
     }
 
     /**
-     * 表示文字列を正規化する
-     * - 末尾の不要な 0 を削除
-     * - "." のみ残る場合は削除
-     * 
-     * ※ 指数表記は対象外
-     * 
-     * @param text 数値文字列
-     * @returns 正規化後の文字列
-     */
-    private static normalize(text: string): string {
-        // 指数表記はそのまま
-        if (text.includes("e")) {
-            return text;
-        }
-
-        if(!text.includes(".")) {
-            return text;
-        }
-
-        return text
-            .replace(/0+$/, "")
-            .replace(/\.$/, "");
-    }
-
-    /**
      * 数字部分の桁数を取得する
      * 
      * ".", "-", "e", "+" は除外する
@@ -105,9 +94,10 @@ export class NumberFormatter {
     private static countDigits(text: string): number {
         const count = text.replace(/[.\-e+]/g, "").length;
 
-        console.debug("数字桁数確認", {
+        console.debug("桁数判定", {
             text,
-            count
+            count,
+            max: Config.MAX_SIGNIFICANT_DIGITS
         });
 
         return count;
