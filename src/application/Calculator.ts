@@ -24,12 +24,17 @@ export class Calculator {
     /** 入力中の文字列 */
     private readonly buffer = new InputBuffer();
 
-    // 起動時に「0」表示
+    /**
+     * 表示制御用インスタンスを受け取る
+     * 
+     * @param display 表示更新を担当するオブジェクト
+     */
     constructor(private readonly display: IDisplay) {}
 
     /**
-     * キー入力を受けて各処理へ振り分け
-     * @param token ボタンの種類
+     * 入力されたキー情報を種類ごとの処理へ振り分ける
+     * 
+     * @param token 入力されたキー情報
      */
     public handle(token: KeyToken): void {
         switch (token.kind) {
@@ -61,8 +66,14 @@ export class Calculator {
 
     /**
      * 数字入力を処理する
-     * 必要に応じて状態遷移を行う
-     * @param digit 入力した数字
+     * 
+     * 状態に応じて以下を行う
+     * - エラー・結果表示後は初期化
+     * - 演算子入力後は右辺入力状態へ遷移
+     * - 入力バッファへ数字を追加
+     * - 表示・履歴を更新
+     * 
+     * @param digit 入力する数字
      */
     private handleDigit(digit: number): void {
         // エラー後自動復帰・結果表示後ならクリアする
@@ -73,7 +84,7 @@ export class Calculator {
             this.handleAllClear();
         }
 
-        // Operator後の最初の入力ならクリア
+        // 演算子入力後の場合は右辺入力状態へ遷移
         if (this.state === CalcState.OperatorEntered) {
             this.state = CalcState.InputtingSecond;
         }
@@ -91,17 +102,22 @@ export class Calculator {
 
     /**
      * 小数点の入力を処理する
-     * 必要に応じて状態遷移を行う
+     * 
+     * 状態に応じて初期化や右辺入力状態への遷移を行い、入力バッファへ小数点を追加する
      */
     private handleDecimalPoint(): void {
-        // エラー後自動復帰・結果表示後ならクリアする
-        if (
-            this.state === CalcState.Error ||
-            this.state === CalcState.ResultShown) {
+        // エラー中は入力を無視する
+        if (this.state === CalcState.Error) {
+            console.debug("エラー中の小数点入力を無視");
+            return;
+        }
+
+        // 結果表示後はクリアして再入力
+        if (this.state === CalcState.ResultShown) {
             this.handleAllClear();
         }
 
-        // Operator後の最初の入力ならクリア
+        // 演算子入力後の場合は右辺入力開始
         if (this.state === CalcState.OperatorEntered) {
             this.buffer.clear();
             this.state = CalcState.InputtingSecond;
@@ -122,31 +138,42 @@ export class Calculator {
      * 演算子入力を処理する
      * 
      * 処理の流れ：
-     * 1. マイナス記号かどうか判定（符号処理）
-     * 2. 演算子の上書き処理
-     * 3. 必要なら計算を実行（左から順）
-     * 4. 次の計算の準備を行う
+     * 1. 演算子入力直後の場合は上書きを行う
+     * 2. "-" の場合は符号入力か判定する
+     * 3. 必要に応じて中間計算を行う
+     * 4. 次の計算状態へ遷移する
      * 
      * @param operation 入力された演算子
      */
     private handleOperator(operation: Operation): void {
-        // ① 符号
+        // 演算子入力直後なら上書き優先
+        if (
+            this.state === CalcState.OperatorEntered &&
+            operation !== Operation.Subtract
+        ) {
+            if (this.tryOverwriteOperator(operation)) {
+                this.renderHistory();
+                return;
+            }
+        }
+
+        // "-" の場合のみ符号判定
         if (this.tryHandleSign(operation)) {
             this.render();
             this.renderHistory();
             return;
         }
 
-        // ② 上書き
+        // "-" 以外、または符号ではない場合の上書き
         if (this.tryOverwriteOperator(operation)) {
             this.renderHistory();
             return;
         }
 
-        // ③ 計算
+        // 計算
         this.computeIfNeeded();
 
-        // ④ 次の準備
+        // 次の準備
         this.prepareNextOperation(operation);
 
         this.render();
@@ -154,15 +181,12 @@ export class Calculator {
     }
 
     /**
-     * マイナス記号を「符号」として扱うか判定する
+     * マイナス記号を符号入力として扱うか判定する
      * 
      * 仕様：
-     * - 先頭の "-" → 負数入力
-     * - 演算子直後の "-" → 右辺の負数
-     * - すでに "-" が入力済みの場合は無視する
-     * 
-     * @param operation 入力された演算子
-     * @returns 符号として処理した場合 true
+     * - 先頭の "-" のみ負数入力として扱う
+     * - 演算子入力後の "-" は上書き処理へ渡す
+     * - "-" 重複入力は無視する
      */
     private tryHandleSign(operation: Operation): boolean {
         // "-" 以外は対象外
@@ -176,7 +200,7 @@ export class Calculator {
             return true;
         }
 
-        // ① 先頭の "-"
+        // ① 先頭の "-" のみ符号扱い
         if (
             this.leftSideNumber === null &&
             this.buffer.isEmpty()
@@ -185,18 +209,6 @@ export class Calculator {
 
             this.buffer.pushMinus();
             this.state = CalcState.InputtingFirst;
-            return true;
-        }
-
-        // ② 演算子直後の "-"
-        if (
-            this.state === CalcState.OperatorEntered &&
-            this.buffer.isEmpty()
-        ) {
-            console.debug("符号入力（右辺）");
-
-            this.buffer.pushMinus();
-            this.state = CalcState.InputtingSecond;
             return true;
         }
 
@@ -227,13 +239,13 @@ export class Calculator {
     }
 
     /**
-     * 連続計算を行う
+     * 必要に応じて中間計算を実行する
      * 
-     * left / operator / buffer が揃っている場合のみ計算を実行する。
-     * 計算結果は次の計算のために left に保持する。
-    */
-   private computeIfNeeded(): void {
-       if (
+     * - 左辺・演算子・右辺が存在する場合は連続計算を行う
+     * - 初回演算子入力時は入力値を左辺として保持する
+     */
+    private computeIfNeeded(): void {
+        if (
            this.leftSideNumber !== null &&
            this.currentOperator !== null &&
            !this.buffer.isEmpty() &&
@@ -289,7 +301,16 @@ export class Calculator {
     }
 
     /**
-     * 現在の式を計算し、結果を表示する
+     * 現在の入力内容を計算し、結果を表示する
+     * 
+     * 計算成功時：
+     * - 計算結果を表示
+     * - ResultShown状態へ遷移
+     * - 次回入力に備えて演算情報をクリアする
+     * 
+     * 計算不可の場合：
+     * - 入力不足の場合は何もしない
+     * - 0除算の場合はエラー状態へ遷移
      */
     private handleEqual(): void {
         // 入力している数値や演算子がない場合、何もしない
@@ -318,10 +339,10 @@ export class Calculator {
             );
     
             // 計算結果を表示
-            this.buffer.setValue(result.toString());
+            this.buffer.setValue(NumberFormatter.format(result));
 
             this.display.renderHistory(
-                `${this.leftSideNumber} ${this.getOperatorSymbol(this.currentOperator)} ${right} =`
+                `${NumberFormatter.format(this.leftSideNumber)} ${this.getOperatorSymbol(this.currentOperator)} ${NumberFormatter.format(right)} =`
             );
     
             console.debug("状態遷移", {
@@ -356,22 +377,80 @@ export class Calculator {
     }
 
     /**
-     * 入力中の末尾1文字を削除する
+     * バックスペース入力を処理する
+     * 
+     * 状態によって処理を変更する
+     * 
+     * - 数字入力中：末尾 1文字を削除
+     * - 演算子入力後：演算子を取り消して左辺入力へ戻す
+     * - 右辺入力中：右辺入力を削除して演算子待ちへ戻す
+     * - 結果表示後：結果をクリアして初期状態へ戻す
      */
     private handleBackspace(): void {
+        // エラー中は無視
         if (this.state === CalcState.Error) {
             return;
         }
 
-        this.buffer.backspace();
+        switch (this.state) {
+            // 3 → ⌫
+            case CalcState.InputtingFirst:
 
-        if (this.buffer.isEmpty()) {
-            this.state = CalcState.Ready;
-            this.leftSideNumber = null;
-            this.currentOperator = null;
+                this.buffer.backspace();
+
+                if (this.buffer.isEmpty()) {
+                    this.state = CalcState.Ready;
+                }
+
+                break;
+
+            // 3+ → ⌫
+            case CalcState.OperatorEntered:
+
+                this.buffer.setValue(
+                    NumberFormatter.format(this.leftSideNumber ?? 0)
+                );
+
+                this.leftSideNumber = null;
+                this.currentOperator = null;
+
+                this.state = CalcState.InputtingFirst;
+
+                this.display.renderHistory("");
+
+                break;
+
+            // 3+2 → ⌫
+            case CalcState.InputtingSecond:
+
+                this.buffer.clear();
+
+                this.state = CalcState.OperatorEntered;
+
+                break;
+
+            // 3+2= → ⌫
+            case CalcState.ResultShown:
+
+                this.buffer.clear();
+
+                this.leftSideNumber = null;
+                this.currentOperator = null;
+                
+                this.state = CalcState.Ready;
+
+                this.display.renderHistory("");
+
+                break;
+
+            case CalcState.Ready:
+                return;
         }
 
         this.render();
+
+        // 常に最新状態で履歴更新
+        this.renderHistory();
     }
 
     /**
@@ -394,7 +473,9 @@ export class Calculator {
     }
 
     /**
-     * 現在の入力内容を表示する
+     * 現在状態に応じた表示内容を画面へ反映する
+     * 
+     * 入力途中の特殊状態（"-" や "0." など）は数値変換せず、そのまま表示する
      */
     private render(): void {
         // Operator 直後は left を表示
@@ -423,17 +504,16 @@ export class Calculator {
     /**
      * 入力途中の特殊な状態を表示用文字列へ変換する
      * 
-     * 数値変換すると情報が失われる入力状態を補正する。
+     * 数値変換すると失われる入力途中の表現を保持する。
      * 
      * 対象：
-     * - 空文字 → "0"
-     * - "-" → "-"
-     * - "." → "0."
-     * - "-." → "-0."
-     * - "0.0" → "0.0"
-     * - 末尾 "." の入力→ そのまま表示
+     * - 空文字
+     * - "-"
+     * - 小数点入力途中
+     * - 小数末尾の 0
+     * - 小数入力中の値
      * 
-     * @param inputText 入力バッファが保持している未変換の文字列
+     * @param inputText 入力バッファの文字列
      * @returns 表示用文字列。対象外の場合は null
      */
     private formatSpecial(inputText: string): string | null {
@@ -442,12 +522,12 @@ export class Calculator {
             return "0";
         }
 
-        // マイナス入力途中
+        // マイナスだけ
         if (inputText === "-") {
             return "-";
         }
 
-        // 小数点入力途中
+        // 小数点だけ
         if (inputText === ".") {
             return "0.";
         }
@@ -457,16 +537,8 @@ export class Calculator {
             return "-0.";
         }
 
-        // 小数入力中の末尾 0を保持する
-        if (
-            inputText.includes(".") &&
-            inputText.endsWith("0")
-        ) {
-            return inputText;
-        }
-
-        // 小数点入力後の状態を維持する
-        if (inputText.endsWith(".")) {
+        // 小数入力中はそのまま表示
+        if (inputText.includes(".")) {
             return inputText;
         }
 
@@ -490,6 +562,8 @@ export class Calculator {
             return;
         }
 
+        const leftText = NumberFormatter.format(this.leftSideNumber);
+
         const op = this.currentOperator
             ? this.getOperatorSymbol(this.currentOperator)
             : "";
@@ -497,14 +571,21 @@ export class Calculator {
         const rightText = this.buffer.getValue();
 
         // 右辺がある場合
-        if (rightText !== "" && this.state === CalcState.InputtingSecond) {
-            this.display.renderHistory(`${this.leftSideNumber} ${op} ${rightText}`);
+        if (
+            rightText !== "" &&
+            this.state === CalcState.InputtingSecond
+        ) {
+            this.display.renderHistory(
+                `${leftText} ${op} ${rightText}`
+            );
             return;
         }
 
         // 演算子のみ
         if (this.currentOperator !== null) {
-            this.display.renderHistory(`${this.leftSideNumber} ${op}`);
+            this.display.renderHistory(
+                `${leftText} ${op}`
+            );
             return;
         }
 
