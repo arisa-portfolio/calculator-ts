@@ -1,18 +1,25 @@
 import { Config } from "../utility/Config";
 
 /**
- * 入力バッファ（文字列）を管理するクラス
+ * 電卓入力中の文字列を管理するクラス
+ * 
+ * 数値変換前の入力状態（小数点・負号など）を保持する
  */
 export class InputBuffer {
-    /** 入力された数値を意味する文字列 */
+    /** 入力中の文字列 */
     private inputValue: string = "";
 
     /**
-     * 数字を追加する（先頭0制御・桁上限あり）
+     * 数字を入力文字列へ追加する
+     * 
+     * 以下を制御する
+     * - 先頭 0の置換
+     * - 最大入力桁数制限
+     * 
      * @param digit 追加する数字（0〜9）
      */
     public pushDigit(digit: number): void {
-        // 先頭0制御
+        // 先頭 0制御
         if (this.inputValue === "0") {
             this.inputValue = digit.toString();
             return;
@@ -31,7 +38,11 @@ export class InputBuffer {
     }
 
     /**
-     * 小数点を追加する（重複防止・0.補完）
+     * 小数点を入力文字列へ追加する
+     * 
+     * 以下を制御する
+     * - 小数点の重複入力防止
+     * - 未入力時の "0." 補完
      */
     public pushDecimal(): void {
         // 重複防止
@@ -50,7 +61,11 @@ export class InputBuffer {
     }
 
     /**
-     * 先頭が "-" の場合、マイナス記号として扱う
+     * 入力値へマイナス符号を付与する
+     * 
+     * - 未入力の場合は "-" のみ保持
+     * - 入力済みの場合は先頭へ "-" を追加
+     * - すでに "-" がある場合は変更しない
      */
     public pushMinus(): void {
         // すでに "-" があるなら何もしない
@@ -68,6 +83,11 @@ export class InputBuffer {
         this.inputValue = "-" + this.inputValue;
     }
 
+    /**
+     * 入力内容がマイナス記号だけか判定する
+     * 
+     * @returns "-" のみの場合 true
+     */
     public isOnlyMinus(): boolean {
         return this.inputValue === "-";
     }
@@ -76,7 +96,6 @@ export class InputBuffer {
      * 値が空かどうかを判定する
      */
     public isEmpty(): boolean {
-        // this.value === "" と同じ意味
         return this.inputValue.length === 0;
     }
 
@@ -88,7 +107,9 @@ export class InputBuffer {
     }
 
     /**
-     * 末尾の1文字を削除する
+     * 入力文字列の末尾 1文字を削除する
+     * 
+     * 入力が空の場合は何もしない
      */
     public backspace(): void {
         if (this.isEmpty()) {
@@ -100,15 +121,20 @@ export class InputBuffer {
     }
 
     /**
-     * value を取得する
-     * @returns 入力された文字列
+     * 現在の入力文字列を取得する
+     * 
+     * @returns 入力中の文字列
     */
     public getValue(): string {
        return this.inputValue;
     }
 
     /**
-     * 現在の値を数値に変換する
+     * 入力文字列を数値へ変換する
+     * 
+     * 空文字の場合は 0として扱う
+     * 
+     * @returns 数値化した入力値
      */
     public toNumber(): number {
         // 空文字の場合は 0 を返す
@@ -120,14 +146,22 @@ export class InputBuffer {
     }
 
     /**
-     * 数字の桁数を取得する（"." と "-" は除外）
+     * 入力文字列内の数字のみの桁数を取得する
+     * 
+     * 小数点と負号は桁数に含めない
+     * 
+     * @returns 数字部分の桁数
      */
     public digitCount(): number {
         return this.inputValue.replace(/[.\-]/g, "").length;
     }
 
     /**
-     * 値を直接設定する
+     * 入力文字列を直接設定する
+     * 
+     * 計算結果の表示復元など、通常入力以外の状態復帰で使用する
+     * 
+     * @param value 設定する文字列
      */
     public setValue(value: string): void {
         this.inputValue = value;
