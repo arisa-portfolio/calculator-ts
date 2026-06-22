@@ -13,10 +13,10 @@ type ConfigType = {
 };
 
 export const Config = {
-    /** 最大表示桁数 */
+    /** 最大表示桁数：8桁 */
     MAX_DIGITS: 8,
 
-    /** 最大有効数字桁数 */
+    /** 最大有効数字桁数：8桁 */
     MAX_SIGNIFICANT_DIGITS: 8,
 
     /** エラー発生時に表示するメッセージ */
